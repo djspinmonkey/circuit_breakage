@@ -3,6 +3,11 @@ module CircuitBreakage
   # #fetch on that object to store and retrieve all state, instead of keeping
   # it in memory.
   #
+  # This implementation is currently somewhat naive as relates to race
+  # conditions, making sure only a single process actually retries, etc.  It
+  # shouldn't cause any serious problems, but it's not realizing the full
+  # benefits of using a shared data store yet.
+  #
   class CachingBreaker < Breaker
     attr_reader :cache, :key
 
