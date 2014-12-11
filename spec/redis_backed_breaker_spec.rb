@@ -2,11 +2,11 @@
 # group for this and the vanilla Breaker spec.
 
 module CircuitBreakage
-  describe CachingBreaker do
-    let(:breaker) { CachingBreaker.new(cache, key, block) }
-    let(:cache)   { MockCache.new }
-    let(:key)     { 'test/data' }
-    let(:block)   { ->(x) { return x } }
+  describe RedisBackedBreaker do
+    let(:breaker)    { RedisBackedBreaker.new(connection, key, block) }
+    let(:connection) { MockCache.new }
+    let(:key)        { 'test/data' }
+    let(:block)      { ->(x) { return x } }
 
     describe '#call' do
       subject { -> { breaker.call(arg) } }

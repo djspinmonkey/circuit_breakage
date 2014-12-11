@@ -22,18 +22,17 @@ breaker.timeout = 0.5         # 500 milliseconds allowed before auto-fail
 breaker.call(*some_args)      # args are passed through to block
 ```
 
-## "Shared" Circuit Breakers
+## Redis-backed "Shared" Circuit Breakers
 
 The unique feature of this particular Circuit Breaker gem is that it also
-supports shared state via memcache (or some other backing data store).  This
-allows a number of circuit breakers running in separate processes to trip and
-un-trip in unison.
+supports shared state via Redis.  This allows a number of circuit breakers
+running in separate processes to trip and un-trip in unison.
 
 ```ruby
-cache = Rails.cache    # Anything that provides similar `write` and `fetch` works
+connection = some_redis_connection
 key = 'my_app/some_operation'
 
-breaker = CircuitBreakage::CachingBreaker.new(cache, key, block)
+breaker = CircuitBreakage::RedisBackedBreaker.new(connection, key, block)
 # Everything else is the same as above.
 ```
 
