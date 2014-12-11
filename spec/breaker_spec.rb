@@ -14,7 +14,7 @@ module CircuitBreakage
       let(:arg) { 'This is an argument.' }
 
       context 'when the circuit is closed' do
-        before { breaker.closed! }
+        before { breaker.state = 'closed' }
 
         it 'calls the block' do
           # The default block just returns the arg.
@@ -37,7 +37,7 @@ module CircuitBreakage
           context 'and the failure count exceeds the failure threshold' do
             before { breaker.failure_count = breaker.failure_threshold }
 
-            it { is_expected.to change { breaker.open? }.to(true) }
+            it { is_expected.to change { breaker.state }.to('open') }
           end
         end
 
@@ -52,7 +52,7 @@ module CircuitBreakage
       end
 
       context 'when the circuit is open' do
-        before { breaker.open! }
+        before { breaker.state = 'open' }
 
         context 'before the retry_time' do
           before { breaker.last_failed = Time.now - breaker.duration + 30 }
@@ -64,61 +64,9 @@ module CircuitBreakage
           before { breaker.last_failed = Time.now - breaker.duration - 30 }
 
           it 'calls the block' do
-            # This is the same as being half open, see below for further tests.
             expect(breaker.call(arg)).to eq arg
           end
         end
-      end
-
-      context 'when the circuit is half open' do
-        before do
-          # For the circuit to be tripped in the first place, the failure count
-          # must have reached the failure threshold.
-          breaker.failure_count = breaker.failure_threshold
-          breaker.half_open!
-        end
-
-        it 'calls the block' do
-          expect(breaker.call(arg)).to eq arg
-        end
-
-        context 'and the call succeeds' do
-          before { breaker.failure_count = 3 }
-
-          it { is_expected.to change { breaker.closed? }.to(true) }
-          it { is_expected.to change { breaker.failure_count }.to(0) }
-        end
-
-        context 'and the call fails' do
-          let(:block) { -> { raise 'some error' } }
-
-          it { is_expected.to change { breaker.open? }.to(true) }
-          it { is_expected.to change { breaker.last_failed } }
-        end
-      end
-    end
-
-    # #half_open?, #half_open!, #closed?, and #closed! are all exactly the same
-    # as #open? and #open!, so we're just going to test the open methods.
-
-    describe '#open!' do
-      it 'opens the circuit' do
-        breaker.open!
-        expect(breaker).to be_open
-      end
-    end
-
-    describe '#open?' do
-      subject { breaker.open? }
-
-      context 'when open' do
-        before { breaker.open! }
-        it { is_expected.to be_truthy }
-      end
-
-      context 'when not open' do
-        before { breaker.closed! }
-        it { is_expected.to be_falsey }
       end
     end
   end

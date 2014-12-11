@@ -11,11 +11,21 @@ module CircuitBreakage
     attr_reader :connection, :key
 
     def initialize(connection, key, block)
-      raise NotImplementedError.new("Still working on it!")
-
       @connection = connection
       @key = key
       super(block)
+    end
+
+    [:state, :failure_count, :last_failed].each do |attr|
+      attr_key = "#{@key}/attrs/#{attr}"
+
+      define_method(attr) do
+        @connection.get(attr_key)
+      end
+
+      define_method("#{attr}=") do |value|
+        @connection.set(attr_key, value)
+      end
     end
 
     private
@@ -30,30 +40,18 @@ module CircuitBreakage
       mutex_key = "#{@key}/locks/#{lock}"
 
       acquired = @connection.setnx(mutex_key, Time.now.to_i)
-      if acquired = 0   # mutex is already acquired
+      if acquired == 0   # mutex is already acquired
         locked_at = @connection.get(mutex_key)
-        return if locked_at + LOCK_TIMEOUT < Time.now.to_i  # unexpired lock
+        raise CircuitBreakage::CircuitOpen if locked_at + LOCK_TIMEOUT < Time.now.to_i
         locked_at_second_check = @connection.getset(mutex_key, Time.now.to_i)
-        return if locked_at_second_check != locked_at       # expired lock, but somebody beat us to it
+        raise CircuitBreakage::CircuitOpen if locked_at_second_check != locked_at
+        # If we get here, then the lock is expired, and we're the first to re-acquire it.
       end
-      # If we get this far, we have successfully acquired the mutex.
 
       begin
         block.call
       ensure
         @connection.del(mutex_key)
-      end
-    end
-
-    [:state, :failure_count, :last_failed].each do |attr|
-      attr_key = "#{@key}/attrs/#{attr}"
-
-      define_method(attr) do
-        @connection.get(attr_key)
-      end
-
-      define_method("#{attr}=") do |value|
-        @connection.set(attr_key, value)
       end
     end
 
