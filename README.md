@@ -22,11 +22,12 @@ breaker.timeout = 0.5         # 500 milliseconds allowed before auto-fail
 breaker.call(*some_args)      # args are passed through to block
 ```
 
-## Redis-backed "Shared" Circuit Breakers
+### Redis-backed "Shared" Circuit Breakers
 
 The unique feature of this particular Circuit Breaker gem is that it also
-supports shared state via Redis.  This allows a number of circuit breakers
-running in separate processes to trip and un-trip in unison.
+supports shared state via Redis, using the SETNX and GETSET commands.  This
+allows a number of circuit breakers running in separate processes to trip and
+un-trip in unison.
 
 ```ruby
 connection = some_redis_connection
