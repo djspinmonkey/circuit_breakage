@@ -1,5 +1,3 @@
 require "circuit_breakage/version"
-
-module CircuitBreakage
-  # Your code goes here...
-end
+require "circuit_breakage/breaker"
+require "circuit_breakage/redis_backed_breaker"
