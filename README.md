@@ -1,9 +1,12 @@
 # CircuitBreakage
 
 A simple Circuit Breaker implementation in Ruby with a timeout.  A Circuit
-Breaker wraps potentially troublesome logic and will "trip" the circuit (ie,
-stop trying to run the logic) if it sees too many failures.  After a while, it
-will retry.
+Breaker wraps a potentially troublesome block of code and will "trip" the
+circuit (ie, stop trying to run the code) if it sees too many failures.  After
+a configurable amount of time, the circuit breaker will retry.
+
+See http://martinfowler.com/bliki/CircuitBreaker.html for a more complete
+description of the pattern.
 
 ## Usage
 
@@ -28,6 +31,9 @@ rescue CircuitBreaker::CircuitTimeout
 end
 ```
 
+A "failure" in this context means that the block either raised an exception or
+timed out.
+
 ### Redis-backed "Shared" Circuit Breakers
 
 The unique feature of this particular Circuit Breaker gem is that it also
@@ -42,8 +48,19 @@ the retry timer as appropriate.
 
 ```ruby
 connection = some_redis_connection
-key = 'my_app/some_operation'
+key = 'my_app/this_operation'
 
 breaker = CircuitBreakage::RedisBackedBreaker.new(connection, key, block)
+breaker.lock_timeout = 30  # seconds before assuming a locking process has crashed
+
 # Everything else is the same as above.
 ```
+
+The `lock_timeout` setting is necessary since a process that crashes or is
+killed might be holding the retry lock. This sets the amount of time other
+processes will wait before deciding a lock has expired.  It should be longer
+than the amount of time you expect the block to take to run.
+
+All circuit breakers using the same key and the same Redis instance will share
+their state . It is strongly recommended that their settings
+(failure_threshold, duration, etc) all be configured the same!
