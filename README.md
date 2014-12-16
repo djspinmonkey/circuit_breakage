@@ -33,7 +33,12 @@ end
 The unique feature of this particular Circuit Breaker gem is that it also
 supports shared state via Redis, using the SETNX and GETSET commands.  This
 allows a number of circuit breakers running in separate processes to trip and
-un-trip in unison.
+un-trip in unison. To be specific, when the circuit is closed, all processes
+proceed as normal. When the circuit is open, all processes will raise
+`CircuitBreakage::CircuitOpen`. When the circuit is open, but the retry
+duration has expired (this is sometimes referred to as a "half open" state),
+exactly *one* process will retry, and then either close the circuit or reset
+the retry timer as appropriate.
 
 ```ruby
 connection = some_redis_connection
@@ -42,7 +47,3 @@ key = 'my_app/some_operation'
 breaker = CircuitBreakage::RedisBackedBreaker.new(connection, key, block)
 # Everything else is the same as above.
 ```
-
-So, if you have the same piece of code running on 27 instances across 3
-different servers, as soon as one trips, they all trip, and as soon as one
-resets, they all reset.
