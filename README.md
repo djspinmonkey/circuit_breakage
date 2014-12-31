@@ -1,7 +1,7 @@
 # CircuitBreakage
 
-A simple Circuit Breaker implementation in Ruby with a timeout.  A Circuit
-Breaker wraps a potentially troublesome block of code and will "trip" the
+A simple circuit breaker implementation in Ruby with a timeout.  A circuit
+breaker wraps a potentially troublesome block of code and will "trip" the
 circuit (ie, stop trying to run the code) if it sees too many failures.  After
 a configurable amount of time, the circuit breaker will retry.
 
@@ -24,9 +24,9 @@ breaker.timeout = 0.5         # 500 milliseconds allowed before auto-fail
 
 begin
   breaker.call(*some_args)    # args are passed through to block
-rescue CircuitBreaker::CircuitOpen
+rescue CircuitBreakage::CircuitOpen
   puts "Too many recent failures!"
-rescue CircuitBreaker::CircuitTimeout
+rescue CircuitBreakage::CircuitTimeout
   puts "Operation timed out!"
 end
 ```
@@ -34,7 +34,7 @@ end
 A "failure" in this context means that the block either raised an exception or
 timed out.
 
-### Redis-backed "Shared" Circuit Breakers
+### Redis-Backed "Shared" Circuit Breakers
 
 The unique feature of this particular Circuit Breaker gem is that it also
 supports shared state via Redis, using the SETNX and GETSET commands.  This
