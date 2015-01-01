@@ -10,7 +10,7 @@ module CircuitBreakage
     end
 
     describe '#call' do
-      subject { -> { breaker.call(arg) } }
+      subject { -> { breaker.call(arg) rescue nil} }
       let(:arg) { 'This is an argument.' }
 
       context 'when the circuit is closed' do
@@ -29,10 +29,15 @@ module CircuitBreakage
         end
 
         context 'and the call fails' do
-          let(:block) { -> { raise 'some error' } }
+          let(:block) { ->(_) { raise 'some error' } }
 
           it { is_expected.to change { breaker.failure_count }.by(1) }
           it { is_expected.to change { breaker.last_failed } }
+          it { is_expected.to change { breaker.last_exception }.from(nil) }
+
+          it 'raises the exception that caused the failure' do
+            expect { breaker.call(arg) }.to raise_exception('some error')
+          end
 
           context 'and the failure count exceeds the failure threshold' do
             before { breaker.failure_count = breaker.failure_threshold }
@@ -46,7 +51,11 @@ module CircuitBreakage
           before { breaker.timeout = 0.1 }
 
           it 'counts as a failure' do
-            expect { breaker.call(arg) }.to change { breaker.failure_count }.by(1)
+            expect { breaker.call(arg) rescue nil }.to change { breaker.failure_count }.by(1)
+          end
+
+          it 'raises CircuitBreakage::CircuitTimeout' do
+            expect { breaker.call(arg) }.to raise_exception(CircuitBreakage::CircuitTimeout)
           end
         end
       end
@@ -57,7 +66,9 @@ module CircuitBreakage
         context 'before the retry_time' do
           before { breaker.last_failed = Time.now - breaker.duration + 30 }
 
-          it { is_expected.to raise_error(CircuitOpen) }
+          it 'raises CircuitBreakage::CircuitOpen' do
+            expect { breaker.call(arg) }.to raise_error(CircuitOpen)
+          end
         end
 
         context 'after the retry time' do

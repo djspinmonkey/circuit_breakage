@@ -9,7 +9,7 @@ module CircuitBreakage
   #
   class Breaker
     attr_accessor :failure_count, :last_failed, :state, :block
-    attr_accessor :failure_threshold, :duration, :timeout
+    attr_accessor :failure_threshold, :duration, :timeout, :last_exception
 
     DEFAULT_FAILURE_THRESHOLD = 5     # Number of failures required to trip circuit
     DEFAULT_DURATION          = 300   # Number of seconds the circuit stays tripped
@@ -54,7 +54,7 @@ module CircuitBreakage
 
       return ret_value
     rescue Exception => e
-      handle_failure
+      handle_failure(e)
     end
 
     def time_to_retry?
@@ -66,12 +66,15 @@ module CircuitBreakage
       self.state = 'closed'
     end
 
-    def handle_failure
+    def handle_failure(error)
       self.last_failed = Time.now
       self.failure_count += 1
       if self.failure_count >= self.failure_threshold
         self.state = 'open'
       end
+
+      self.last_exception = error
+      raise(error)
     end
   end
 end
