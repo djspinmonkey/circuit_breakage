@@ -47,7 +47,7 @@ module CircuitBreakage
 
     def do_call(*args)
       ret_value = nil
-      Timeout.timeout(self.timeout, CircuitTimeout) do
+      Timeout.timeout(self.timeout) do
         ret_value = @block.call(*args)
       end
       handle_success
@@ -74,7 +74,15 @@ module CircuitBreakage
       end
 
       self.last_exception = error
-      raise(error)
+
+      if error.instance_of?(Timeout::Error)
+        # Raising an instance of Interrupt seems pretty rude, and there's no
+        # useful information in Timeout::Error anyway, so re-raise timeout
+        # errors as our own error class.
+        raise CircuitTimeout, "Circuit breaker timed out."
+      else
+        raise(error)
+      end
     end
   end
 end
