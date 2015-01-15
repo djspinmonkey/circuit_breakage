@@ -64,7 +64,7 @@ module CircuitBreakage
         before { breaker.state = 'open' }
 
         context 'before the retry_time' do
-          before { breaker.last_failed = Time.now - breaker.duration + 30 }
+          before { breaker.last_failed = Time.now.to_i - breaker.duration + 30 }
 
           it 'raises CircuitBreakage::CircuitOpen' do
             expect { breaker.call(arg) }.to raise_error(CircuitOpen)
@@ -72,7 +72,7 @@ module CircuitBreakage
         end
 
         context 'after the retry time' do
-          before { breaker.last_failed = Time.now - breaker.duration - 30 }
+          before { breaker.last_failed = Time.now.to_i - breaker.duration - 30 }
 
           it 'calls the block' do
             expect(breaker.call(arg)).to eq arg

@@ -17,16 +17,28 @@ module CircuitBreakage
       super(block)
     end
 
-    [:state, :failure_count, :last_failed].each do |attr|
-      attr_key = "#{@key}/attrs/#{attr}"
+    def state
+      @connection.get("#{@key}/attrs/state")
+    end
 
-      define_method(attr) do
-        @connection.get(attr_key)
-      end
+    def state=(value)
+      @connection.set("#{@key}/attrs/state", value)
+    end
 
-      define_method("#{attr}=") do |value|
-        @connection.set(attr_key, value)
-      end
+    def failure_count
+      @connection.get("#{@key}/attrs/failure_count").to_i
+    end
+
+    def failure_count=(value)
+      @connection.set("#{@key}/attrs/failure_count", value)
+    end
+
+    def last_failed
+      @connection.get("#{@key}/attrs/last_failed").to_i
+    end
+
+    def last_failed=(value)
+      @connection.set("#{@key}/attrs/last_failed", value)
     end
 
     private

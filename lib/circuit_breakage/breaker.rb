@@ -21,7 +21,7 @@ module CircuitBreakage
       self.duration           = DEFAULT_DURATION
       self.timeout            = DEFAULT_TIMEOUT
       self.failure_count      ||= 0
-      self.last_failed        ||= Time.at(0)
+      self.last_failed        ||= 0
       self.state              ||= 'closed'
     end
 
@@ -58,7 +58,7 @@ module CircuitBreakage
     end
 
     def time_to_retry?
-      Time.now >= self.last_failed + self.duration
+      Time.now.to_i >= self.last_failed + self.duration
     end
 
     def handle_success
@@ -67,7 +67,7 @@ module CircuitBreakage
     end
 
     def handle_failure(error)
-      self.last_failed = Time.now
+      self.last_failed = Time.now.to_i
       self.failure_count += 1
       if self.failure_count >= self.failure_threshold
         self.state = 'open'

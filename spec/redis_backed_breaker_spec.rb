@@ -30,7 +30,7 @@ module CircuitBreakage
         context 'and the call fails' do
           let(:block) { ->(_) { raise 'some error' } }
 
-          it { is_expected.to change { breaker.failure_count }.by(1) }
+          it { is_expected.to change { breaker.failure_count.to_i }.by(1) }
           it { is_expected.to change { breaker.last_failed } }
 
           context 'and the failure count exceeds the failure threshold' do
@@ -45,7 +45,7 @@ module CircuitBreakage
           before { breaker.timeout = 0.1 }
 
           it 'counts as a failure' do
-            expect { breaker.call(arg) rescue nil }.to change { breaker.failure_count }.by(1)
+            expect { breaker.call(arg) rescue nil }.to change { breaker.failure_count.to_i }.by(1)
           end
         end
       end
@@ -54,7 +54,7 @@ module CircuitBreakage
         before { breaker.state = 'open' }
 
         context 'before the retry_time' do
-          before { breaker.last_failed = Time.now - breaker.duration + 30 }
+          before { breaker.last_failed = Time.now.to_i - breaker.duration + 30 }
 
           it 'raises CircuitBreakage::CircuitOpen' do
             expect { breaker.call(arg) }.to raise_error(CircuitOpen)
@@ -63,7 +63,7 @@ module CircuitBreakage
 
         context 'after the retry time' do
           it 'calls the block' do
-            breaker.last_failed = Time.at(0)
+            breaker.last_failed = 0
             expect(breaker.call(arg)).to eq arg
           end
 
@@ -83,7 +83,8 @@ class MockRedis
   end
 
   def get(key)
-    @stored_data[key]
+    # Redis get() always returns values as strings.
+    @stored_data[key].to_s
   end
 
   def set(key, val)
@@ -100,8 +101,8 @@ class MockRedis
   end
 
   def getset(key, val)
-    old_val = @stored_data[key]
-    @stored_data[key] = val
+    old_val = get(key)
+    set(key, val)
     return old_val
   end
 
