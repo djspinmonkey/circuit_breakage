@@ -9,6 +9,11 @@ module CircuitBreakage
       expect(breaker).to be_a(Breaker)
     end
 
+    it 'initializes without a block' do
+      breaker = Breaker.new
+      expect(breaker).to be_a(Breaker)
+    end
+
     describe '#call' do
       subject { -> { breaker.call(arg) rescue nil} }
       let(:arg) { 'This is an argument.' }
@@ -19,6 +24,21 @@ module CircuitBreakage
         it 'calls the block' do
           # The default block just returns the arg.
           expect(breaker.call(arg)).to eq arg
+        end
+
+        it 'yields the block' do
+          value = breaker.call(arg) do | param |
+            param
+          end
+          expect(value).to eq arg
+        end
+
+        it 'yields the block with dynamic binding variables' do
+          param = 'Felix'
+          value = breaker.call do
+            param.size
+          end
+          expect(value).to eq 'Felix'.size
         end
 
         context 'and the call succeeds' do
