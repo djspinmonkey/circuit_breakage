@@ -15,7 +15,7 @@ module CircuitBreakage
     DEFAULT_DURATION          = 300   # Number of seconds the circuit stays tripped
     DEFAULT_TIMEOUT           = 10    # Number of seconds before the call times out
 
-    def initialize(block)
+    def initialize(block=nil)
       self.block              = block
       self.failure_threshold  = DEFAULT_FAILURE_THRESHOLD
       self.duration           = DEFAULT_DURATION
@@ -25,30 +25,32 @@ module CircuitBreakage
       self.state              ||= 'closed'
     end
 
-    def call(*args)
+    # Yield the block within the circuit.  If no block
+    # is passed use the block passed in at initialization
+    def call(*args, &block_arg)
       case(state)
       when 'open'
         if time_to_retry?
-          do_retry(*args)
+          do_retry(*args, &block_arg)
         else
           raise CircuitOpen
         end
       when 'closed'
-        do_call(*args)
+        do_call(*args, &block_arg)
       end
     end
 
     private
 
     # Defined independently so that it can be overridden.
-    def do_retry(*args)
-      do_call(*args)
+    def do_retry(*args, &block_arg)
+      do_call(*args, &block_arg)
     end
 
-    def do_call(*args)
+    def do_call(*args, &block_arg)
       ret_value = nil
       Timeout.timeout(self.timeout) do
-        ret_value = @block.call(*args)
+        ret_value = (block_arg || @block).call(*args)
       end
       handle_success
 

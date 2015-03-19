@@ -34,6 +34,32 @@ end
 A "failure" in this context means that the proc either raised an exception or
 timed out.
 
+### Example yielding to a block
+
+As an alternative to initializing the breaker with a block you can
+use a single breaker with different remote calls by invoking call with a block.
+
+```ruby
+class ShapeAPI
+  def initialize
+    @breaker = CircuitBreakage::Breaker.new
+    @breaker.failure_threshold =   3
+    @breaker.duration          =  10
+    @breaker.timeout           = 0.5
+    @service = ShapeService.new
+  end
+
+  def get_square
+    @breaker.call { @service.get_square_widget }
+  end
+
+  def get_circles(count)
+    @breaker.call { @service.get_circles(count) }
+  end
+
+end
+```
+
 ### Slightly More Complex Example in Rails
 
 This example shows one way you might choose to wrap a remote service call in a
