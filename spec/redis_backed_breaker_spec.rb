@@ -20,6 +20,21 @@ module CircuitBreakage
           expect(breaker.call(arg)).to eq arg
         end
 
+        it 'yields the block' do
+          value = breaker.call(arg) do | param |
+            param
+          end
+          expect(value).to eq arg
+        end
+
+        it 'yields the block with dynamic binding variables' do
+          param = 'Felix'
+          value = breaker.call do
+            param.size
+          end
+          expect(value).to eq 'Felix'.size
+        end
+
         context 'and the call succeeds' do
           it 'resets the failure count' do
             breaker.failure_count = 3
