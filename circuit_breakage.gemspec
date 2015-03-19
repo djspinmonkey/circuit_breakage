@@ -9,9 +9,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ["John Hyland"]
   spec.email         = ["john@djspinmonkey.com"]
   spec.summary       = %q{Provides a simple circuit breaker pattern.}
-  spec.description   = %q{Provides a circuit breaker pattern with configurable error tolerance, timeout, breakage duration, and state storage.}
-  spec.homepage      = "https://source.datanerd.us/jhyland/circuit_breakage" # TODO: move to some org
-  spec.license       = "New Relic"
+  spec.description   = %q{Provides a circuit breaker pattern with optional support for distributed state.}
+  spec.homepage      = "https://github.com/djspinmonkey/circuit_breakage"
+  spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
