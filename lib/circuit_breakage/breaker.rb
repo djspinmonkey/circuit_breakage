@@ -10,16 +10,21 @@ module CircuitBreakage
   class Breaker
     attr_accessor :failure_count, :last_failed, :state, :block
     attr_accessor :failure_threshold, :duration, :timeout, :last_exception
+    attr_accessor :only_trip_on, :never_trip_on
 
-    DEFAULT_FAILURE_THRESHOLD = 5     # Number of failures required to trip circuit
-    DEFAULT_DURATION          = 300   # Number of seconds the circuit stays tripped
-    DEFAULT_TIMEOUT           = 10    # Number of seconds before the call times out
+    DEFAULT_FAILURE_THRESHOLD = 5           # Number of failures required to trip circuit
+    DEFAULT_DURATION          = 300         # Number of seconds the circuit stays tripped
+    DEFAULT_TIMEOUT           = 10          # Number of seconds before the call times out
+    DEFAULT_ONLY_TRIP_ON      = [Exception] # Exceptions that trigger the breaker
+    DEFAULT_NEVER_TRIP_ON     = []          # Exceptions that won't trigger the breaker
 
     def initialize(block=nil)
       self.block              = block
       self.failure_threshold  = DEFAULT_FAILURE_THRESHOLD
       self.duration           = DEFAULT_DURATION
       self.timeout            = DEFAULT_TIMEOUT
+      self.only_trip_on       = DEFAULT_ONLY_TRIP_ON
+      self.never_trip_on      = DEFAULT_NEVER_TRIP_ON
       self.failure_count      ||= 0
       self.last_failed        ||= 0
       self.state              ||= 'closed'
@@ -55,7 +60,8 @@ module CircuitBreakage
       handle_success
 
       return ret_value
-    rescue Exception => e
+    rescue *self.only_trip_on => e
+      raise if never_trip_on.any? { |t| e.instance_of?(t) }
       handle_failure(e)
     end
 

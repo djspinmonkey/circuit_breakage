@@ -18,9 +18,15 @@ proc = ->(*args) do
 end
 
 breaker = CircuitBreakage::Breaker.new(proc)
+
+# These options are required.
 breaker.failure_threshold =   3 # only 3 failures before tripping circuit
 breaker.duration          =  10 # 10 seconds before retry
 breaker.timeout           = 0.5 # 500 milliseconds allowed before auto-fail
+
+# These options are, uh, optional.
+breaker.only_trip_on  = [ExpensiveFailureException]
+breaker.never_trip_on = [CheapUnimportantFailureException]
 
 begin
   breaker.call(*some_args)    # args are passed through to the proc

@@ -1,4 +1,7 @@
 module CircuitBreakage
+  class VerySpecificException < StandardError
+  end
+
   describe Breaker do
     let(:breaker) { Breaker.new(block) }
     let(:block) { ->(x) { return x } }
@@ -76,6 +79,85 @@ module CircuitBreakage
 
           it 'raises CircuitBreakage::CircuitTimeout' do
             expect { breaker.call(arg) }.to raise_exception(CircuitBreakage::CircuitTimeout)
+          end
+        end
+
+        context 'with specific exceptions defined' do
+          before do
+            breaker.only_trip_on = [VerySpecificException]
+          end
+
+          context 'and the call fails with one of the specific exceptions' do
+            let(:block) { ->(_) { raise VerySpecificException } }
+
+            it { is_expected.to change { breaker.failure_count }.by(1) }
+            it { is_expected.to change { breaker.last_failed } }
+            it { is_expected.to change { breaker.last_exception }.from(nil) }
+
+            it 'raises the exception that caused the failure' do
+              expect { breaker.call(arg) }.to raise_exception(VerySpecificException)
+            end
+          end
+
+          context 'and the call fails with a different exception (including timeouts)' do
+            let(:block) { ->(_) { raise Timeout::Error } }
+
+            it { is_expected.not_to change { breaker.failure_count } }
+            it { is_expected.not_to change { breaker.last_failed } }
+            it { is_expected.not_to change { breaker.last_exception } }
+
+            it 'raises the exception that caused the failure' do
+              expect { breaker.call(arg) }.to raise_exception(Timeout::Error)
+            end
+          end
+        end
+
+        context 'with specific exceptions excluded' do
+          before do
+            breaker.never_trip_on = [VerySpecificException]
+          end
+
+          context 'and the call fails with one of the specific exceptions' do
+            let(:block) { ->(_) { raise VerySpecificException } }
+
+            it { is_expected.not_to change { breaker.failure_count } }
+            it { is_expected.not_to change { breaker.last_failed } }
+            it { is_expected.not_to change { breaker.last_exception } }
+
+            it 'raises the exception that caused the failure' do
+              expect { breaker.call(arg) }.to raise_exception(VerySpecificException)
+            end
+          end
+
+          context 'and the call fails with a different exception' do
+            let(:block) { ->(_) { raise RuntimeError } }
+
+            it { is_expected.to change { breaker.failure_count }.by(1) }
+            it { is_expected.to change { breaker.last_failed } }
+            it { is_expected.to change { breaker.last_exception }.from(nil) }
+
+            it 'raises the exception that caused the failure' do
+              expect { breaker.call(arg) }.to raise_exception(RuntimeError)
+            end
+          end
+        end
+
+        context 'with overlapping whitelisted and blacklisted exceptions' do
+          before do
+            breaker.only_trip_on  = [StandardError]
+            breaker.never_trip_on = [VerySpecificException] # inherits from StandardError
+          end
+
+          context 'and the call fails with an overlapped exception' do
+            let(:block) { ->(_) { raise VerySpecificException } }
+
+            it { is_expected.not_to change { breaker.failure_count } }
+            it { is_expected.not_to change { breaker.last_failed } }
+            it { is_expected.not_to change { breaker.last_exception } }
+
+            it 'raises the exception that caused the failure' do
+              expect { breaker.call(arg) }.to raise_exception(VerySpecificException)
+            end
           end
         end
       end
