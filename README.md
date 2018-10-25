@@ -100,7 +100,7 @@ class WidgetClient
   end
 
   def get_widget(id)
-    class.breaker.call(id)
+    self.class.breaker.call(id)
   end
 end
 ```
